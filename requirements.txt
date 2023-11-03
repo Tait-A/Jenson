@@ -1,0 +1,3 @@
+PiCamera
+numpy
+opencv-python
