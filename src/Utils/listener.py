@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 import socket
 import struct
-from config import HOST_IPV4
+import sys
+from src.config import HOST_IPV4
 
 
 class VideoServer:
