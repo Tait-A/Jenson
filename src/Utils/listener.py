@@ -3,7 +3,8 @@ import numpy as np
 import socket
 import struct
 import sys
-from src.config import HOST_IPV4
+sys.path.insert(1,"/afs/inf.ed.ac.uk/user/s20/s2051131/Jenson/src")
+from config import HOST_IPV4
 
 
 class VideoServer:
