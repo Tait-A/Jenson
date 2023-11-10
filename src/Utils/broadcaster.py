@@ -3,7 +3,9 @@ import socket
 import struct
 import time
 import picamera
-
+import sys
+sys.path.insert(1, "/home/pi/Jenson/src")
+from config import HOST_IPV4
 
 class SplitFrames(object):
     def __init__(self, connection):
@@ -26,8 +28,10 @@ class SplitFrames(object):
         self.stream.write(buf)
 
 
-client_socket = socket.socket()
-client_socket.connect(("my_server", 8000))
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print('Attempting connection to '+ str(HOST_IPV4)+'...')
+client_socket.connect((HOST_IPV4, 65024))
+print('Connected')
 connection = client_socket.makefile("wb")
 try:
     output = SplitFrames(connection)

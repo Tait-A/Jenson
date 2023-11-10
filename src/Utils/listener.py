@@ -3,7 +3,8 @@ import numpy as np
 import socket
 import struct
 import sys
-from src.config import HOST_IPV4
+sys.path.insert(1,"/afs/inf.ed.ac.uk/user/s20/s2051131/Jenson/src")
+from config import HOST_IPV4
 
 
 class VideoServer:
@@ -19,9 +20,9 @@ class VideoServer:
     def start(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(1)
+        self.server_socket.listen()
 
-        print("Waiting for a client to connect...")
+        print("Waiting for a client to connect to "+str(HOST_IPV4)+"...")
         self.client_socket, self.client_address = self.server_socket.accept()
         print("Client connected:", self.client_address)
 
@@ -61,10 +62,10 @@ class VideoServer:
 
             cv2.imshow("Bananas", image)
             # Ensure the image size is 1080p (1920x1080)
-            if image.shape[1] == 1080 and image.shape[0] == 1920:
+            if image.shape[0] == 1080 and image.shape[1] == 1920:
                 # Process the 1080p BGR image here
                 self.frames.append(image)
-                cv2.imwrite("output_image" + str(frame_count) + ".jpg", image)
+                cv2.imwrite("Output/output_image" + str(frame_count) + ".jpg", image)
             else:
                 print("Received frame is not 1080p.")
         except Exception as e:
@@ -72,5 +73,5 @@ class VideoServer:
 
 
 if __name__ == "__main__":
-    server = VideoServer(HOST_IPV4, 8000)  # Customize the IP address and port
+    server = VideoServer(HOST_IPV4, 65024)  # Customize the IP address and port
     server.start()
