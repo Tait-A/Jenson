@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 from camera import Camera
+from collections import deque
 
 # Feature Extractor class to extract features from images taken by the camera
 
@@ -12,6 +13,7 @@ class FeatureExtractor:
         self.camera = camera
         self.track = track
         self.algorithm = cv2.SIFT_create()
+        self.featureQueue = deque(maxlen=20)
 
     # Extract features from the image
     def extractFeatures(self):
