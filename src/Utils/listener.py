@@ -60,12 +60,11 @@ class VideoServer:
             # Decode the frame as a JPEG image
             image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
-            cv2.imshow("Bananas", image)
             # Ensure the image size is 1080p (1920x1080)
             if image.shape[0] == 1080 and image.shape[1] == 1920:
                 # Process the 1080p BGR image here
                 self.frames.append(image)
-                cv2.imwrite("Output/output_image" + str(frame_count) + ".jpg", image)
+                cv2.imwrite("output_image" + str(frame_count) + ".jpg", image)
             else:
                 print("Received frame is not 1080p.")
         except Exception as e:
