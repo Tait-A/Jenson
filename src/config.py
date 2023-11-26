@@ -1,2 +1,4 @@
 RPI_IPV4 = "192.168.105.135"
 HOST_IPV4 = "129.215.2.35"
+MAC_IPV4 = "192.168.105.79"
+BROADCAST_PATH = "/Jenson/src/Utils/broadcaster.py"
