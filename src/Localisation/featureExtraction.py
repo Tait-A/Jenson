@@ -16,9 +16,8 @@ class FeatureExtractor:
         self.featureQueue = deque(maxlen=20)
 
     # Extract features from the image
-    def extractFeatures(self):
+    def extractFeatures(self, img):
         # Load the ceiling image
-        img = self.camera.capture_image()
         ceiling_image = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
 
         # Initialize the SIFT detector
