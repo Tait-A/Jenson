@@ -26,8 +26,8 @@ class DatasetHandler:
         # Set up data holders
         self.images = []
 
-        self.k = np.array([[329.115520046, 0, 320.0],
-                           [0, 329.115520046, 240.0],
+        self.k = np.array([[3953.68754, 0, 2152.3233],
+                           [0, 3964.49423, 1451.76742],
                            [0,   0,   1]], dtype=np.float32)
         
 
