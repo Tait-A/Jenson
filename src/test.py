@@ -1,6 +1,9 @@
 import subprocess
 import time
+import os
+import cv2
 from config import BROADCAST_PATH
+from Localisation import featureExtraction
 
 
 
@@ -28,4 +31,14 @@ def test_feature_extraction():
     """
     Test the feature extraction by taking an image from and extracting the features
     """
-    
+    extractor = featureExtraction.FeatureExtractor()
+
+    for image in os.listdir(os.path.join(os.getcwd(), "src", "Output")):
+        if image.endswith(".jpg"):
+            image_path = os.path.join(os.getcwd(), "src", "Output", image)
+
+            # Get image from image path
+            #img = cv2.imread(image_path)
+            extractor.extractFeatures(image_path, image[:-4])
+
+test_feature_extraction()
