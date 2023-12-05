@@ -59,6 +59,7 @@ class VideoServer:
 
             # Decode the frame as a JPEG image
             image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # Ensure the image size is 1080p (1920x1080)
             if image.shape[0] == 1080 and image.shape[1] == 1920:
