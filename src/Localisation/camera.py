@@ -35,8 +35,6 @@ class Camera:
         self.images.appendleft(image)
         return image
     
-    def save_image(self, image, name):
-        image.save(name)
 
 
 camera = Camera()

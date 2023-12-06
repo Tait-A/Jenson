@@ -5,6 +5,7 @@ import numpy as np
 import cv2 as cv
 
 import matplotlib as mpl
+from matplotlib import style
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D
@@ -113,7 +114,7 @@ def visualize_trajectory(trajectory):
 
     # Set styles
     mpl.rc("figure", facecolor="white")
-    plt.style.use("seaborn-whitegrid")
+    plt.style.use("seaborn-v0_8-whitegrid")
 
     # Plot the figure
     fig = plt.figure(figsize=(8, 6), dpi=100)
