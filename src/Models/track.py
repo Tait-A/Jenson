@@ -26,14 +26,16 @@ assert len(outer_x) == len(outer_y)
 
 class Track:
     
-    def __init__(self, x_inner, y_inner, x_outer, y_outer):
+    def __init__(self, x_inner, y_inner, x_outer, y_outer, intervals = 200):
         self.outer_spline = Spline(x_outer, y_outer)
         self.inner_spline = Spline(x_inner, y_inner)
-        self.midline_spline_n, self.midline_spline_d = self.create_midline()
+        self.intervals = intervals
+        self.midline_spline_n = self.create_midline()
+        self.width = self.calculate_width()
         self.plot()
 
     def create_midline(self):
-        ti = np.linspace(0, 1, 200)
+        ti = np.linspace(0, 1, self.intervals)
         outer = self.outer_spline.spline(ti)
         outer_x = np.array(outer[0])
         outer_y = np.array(outer[1])
@@ -48,25 +50,49 @@ class Track:
         midline_spline_naive = Spline(midline_x, midline_y)
 
         # Distance based approximation
-        midline_x = np.zeros_like(outer_x)
-        midline_y = np.zeros_like(outer_y)
+        # midline_x = np.zeros_like(outer_x)
+        # midline_y = np.zeros_like(outer_y)
 
-        for i,t in enumerate(ti):
-            point = outer[:, i].reshape(1,2)
-            dists = cdist(point, inner.T)
-            closest = np.argmin(dists)
-            point = inner[:,closest]
-            midline_x[i] = point[0]
-            midline_y[i] = point[1]
+        # for i,t in enumerate(ti):
+        #     point = outer[:, i].reshape(1,2)
+        #     dists = cdist(point, inner.T)
+        #     closest = np.argmin(dists)
+        #     point = inner[:,closest]
+        #     midline_x[i] = point[0]
+        #     midline_y[i] = point[1]
 
-        plt.plot(midline_x, midline_y, 'o')
-        plt.show()
-        midline_spline_dist = Spline(midline_x, midline_y)
+        # plt.plot(midline_x, midline_y, 'o')
+        # plt.show()
+        # midline_spline_dist = Spline(midline_x, midline_y)
         
 
-        return midline_spline_naive, midline_spline_dist
+        return midline_spline_naive #, midline_spline_dist
 
-        
+    def calculate_width(self):
+        # take a time parameterisation of the splines
+        ti = np.linspace(0, 1, self.intervals)
+        outer = self.outer_spline.spline(ti)
+        inner = self.inner_spline.spline(ti)
+        mid = self.midline_spline_n.spline(ti)
+        width = np.zeros(self.intervals)
+
+        # calculate the closest points on the edges to each point on the midline
+        # take the distance between them for the width
+        for i, point in enumerate(mid.T):
+            point = point.reshape(1,2)
+            search_space = np.array(list(map(lambda n: n%self.intervals,range(i-10, i+10))))
+            inner_points = inner[:,search_space]
+            outer_points = outer[:,search_space]
+            inner_dists = cdist(point, inner_points.T)
+            outer_dists = cdist(point, outer_points.T)
+            inner_closest = (np.argmin(inner_dists) + i - 10) % self.intervals
+            outer_closest = (np.argmin(outer_dists) + i - 10) % self.intervals
+            width[i] = np.linalg.norm(inner[:,inner_closest] - outer[:,outer_closest]) 
+
+        width_spline = Spline(width)
+
+        return width_spline
+                
 
 
     def plot(self):
@@ -87,19 +113,18 @@ class Track:
         plt.show()
 
 class Spline:
-    def __init__(self, x, y):
-        assert(len(x) == len(y))
-        self.xy = np.array(list(zip(x, y)))
-        # remove duplicates
-        print(self.xy.shape)
-        self.xy = np.unique(self.xy, axis=1)
-        print(self.xy.shape)
-
+    def __init__(self, x, y = None):
         self.x = np.array([x for x,y in self.xy])
-        self.y = np.array([y for x,y in self.xy])
 
-        self.t = self.calc_dists(self.x,self.y)
-        data = np.vstack((self.x, self.y))
+        if not(y == None):
+            assert(len(x) == len(y))
+            self.y = np.array([y for x,y in self.xy])
+            self.t = self.calc_dists(self.x,self.y)
+            data = np.vstack((self.x, self.y))
+        else:
+            self.t = self.calc_dists(self.x, np.zeros_like(self.x))
+            data = self.x
+        
         self.spline = CubicSmoothingSpline(self.t, data)
         self.curvature = self.calc_curvature(self.spline)
     
@@ -124,7 +149,6 @@ class Spline:
         d2 = spline(ti,nu=2)
         
         k = abs(d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
-        return k
-    
+        return k 
 
 track = Track(inner_x, inner_y, outer_x, outer_y)
