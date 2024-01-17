@@ -33,7 +33,7 @@ class Track:
         self.inner_spline = Spline(x_inner, y_inner)
         self.intervals = intervals
         self.midline, self.width = self.create_midline()
-        self.plot()
+        # self.plot()
         self.optimised = self.optimise()
 
     def create_midline(self):
@@ -144,6 +144,7 @@ class Spline:
         self.spline = CubicSmoothingSpline(self.t, data)
         self.curvature = self.calc_curvature(self.spline)
         
+        
     def calc_dists(self, data):
         x = data[0]
         y = data[1]
@@ -159,7 +160,23 @@ class Spline:
         d1 = spline(ti,nu=1)
         d2 = spline(ti,nu=2)
         
+        # can't remember what this is calculating
         k = abs(d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
-        return k 
+        return k
+    
+    def derivative(self, t, power = 1):
+        dx, dy = self.spline.spline(t, power)
+        dy_dx = dy/dx
+        return dy_dx
+    
+    def slope(self, t):
+        derivatives = self.derivative(t)
+        if isinstance(derivatives, np.ndarray):
+            slopes = [np.arctan(derivative) for derivative in derivatives]
+            return slopes
+        else:
+            slope = np.arctan(derivatives)
+            return slope
+
 
 track = Track(inner_x, inner_y, outer_x, outer_y)
