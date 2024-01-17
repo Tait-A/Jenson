@@ -7,7 +7,7 @@ from csaps import CubicSmoothingSpline
 from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
-
+from ces import ConvexElasticStretching
 # A class repesenting the track, which is a 2d representation of the track in a 2d space
 inner_x = [0, 0.2,  0.4,  0.59, 0.77, 0.94, 1.1, 1.21, 1.27, 1.31, 1.31,  1.31,  1.29, 1.19,  1,  0.81,  0.63,  0.49,  0.33,  0.19,  0.03,  -0.12, -0.29, -0.44, -0.57, -0.69, -0.8,  -0.9,  -1,    -1.1,-1.16,-1.2,-1.22,-1.23,-1.23,-1.22,-1.21,-1.18,-1.1,-1,-0.85,-0.7,-0.58,-0.5,-0.4,-0.27,-0.14,0]
 inner_y = [1, 0.99, 0.96, 0.9,  0.8,  0.67, 0.5, 0.3,  0.1,  -0.1, -0.29, -0.48, -0.7, -0.89, -1, -0.97, -0.84, -0.69, -0.53, -0.43, -0.35, -0.31, -0.3,  -0.34, -0.42, -0.55, -0.69, -0.83, -0.91, -0.82,-0.65,-0.5,-0.35,-0.2,0,0.18,0.36,0.52,0.59,0.53,0.49,0.49,0.55,0.7,0.84,0.94,0.99,1]
@@ -28,11 +28,13 @@ assert len(outer_x) == len(outer_y)
 class Track:
     
     def __init__(self, x_inner, y_inner, x_outer, y_outer, intervals = 200):
+        self.cones = np.array(list(zip(x_inner, y_inner)) + list(zip(x_outer, y_outer)))
         self.outer_spline = Spline(x_outer, y_outer)
         self.inner_spline = Spline(x_inner, y_inner)
         self.intervals = intervals
         self.midline, self.width = self.create_midline()
         self.plot()
+        self.optimised = self.optimise()
 
     def create_midline(self):
         ti = np.linspace(0, 1, self.intervals)
@@ -90,7 +92,8 @@ class Track:
         return width_spline, midpoints_spline
                 
     def optimise(self):
-        pass
+        ces = ConvexElasticStretching(self.midline, self.width, self.cones)
+        return ces.trajectory
 
 
     def plot(self):
