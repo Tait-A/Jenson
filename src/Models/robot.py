@@ -7,7 +7,7 @@ import sys
 import os
 
 class Robot:
-    def __init__(self, x=0, y=0, theta=0, phi=0, v=0, w=0, width=0, length=0, steering_lims=45):
+    def __init__(self, x=0, y=0, theta=0, phi=0, v=0, w=0, width=0, length=0, mass = 1, steering_lims=45):
         self.x = x              # x position
         self.y = y              # y position
         self.theta = theta      # angle of robot
@@ -16,6 +16,7 @@ class Robot:
         self.w = w              # angular velocity
         self.width = width      # width of robot
         self.length = length    # length of robot
+        self.mass = mass        # mass of robot
         self.steering_lims = steering_lims # steering limits of robot
 
     def localise(self):
