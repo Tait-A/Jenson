@@ -8,6 +8,8 @@ from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from ces import ConvexElasticStretching
+from splines import Spline
+
 # A class repesenting the track, which is a 2d representation of the track in a 2d space
 inner_x = [0, 0.2,  0.4,  0.59, 0.77, 0.94, 1.1, 1.21, 1.27, 1.31, 1.31,  1.31,  1.29, 1.19,  1,  0.81,  0.63,  0.49,  0.33,  0.19,  0.03,  -0.12, -0.29, -0.44, -0.57, -0.69, -0.8,  -0.9,  -1,    -1.1,-1.16,-1.2,-1.22,-1.23,-1.23,-1.22,-1.21,-1.18,-1.1,-1,-0.85,-0.7,-0.58,-0.5,-0.4,-0.27,-0.14,0]
 inner_y = [1, 0.99, 0.96, 0.9,  0.8,  0.67, 0.5, 0.3,  0.1,  -0.1, -0.29, -0.48, -0.7, -0.89, -1, -0.97, -0.84, -0.69, -0.53, -0.43, -0.35, -0.31, -0.3,  -0.34, -0.42, -0.55, -0.69, -0.83, -0.91, -0.82,-0.65,-0.5,-0.35,-0.2,0,0.18,0.36,0.52,0.59,0.53,0.49,0.49,0.55,0.7,0.84,0.94,0.99,1]
@@ -21,20 +23,15 @@ assert len(inner_x) == len(inner_y)
 assert len(outer_x) == len(outer_y)
 
 
-
-
-
-
 class Track:
-    
     def __init__(self, x_inner, y_inner, x_outer, y_outer, intervals = 200):
         self.cones = np.array(list(zip(x_inner, y_inner)) + list(zip(x_outer, y_outer)))
         self.outer_spline = Spline(x_outer, y_outer)
         self.inner_spline = Spline(x_inner, y_inner)
         self.intervals = intervals
         self.midline, self.width = self.create_midline()
-        # self.plot()
         self.optimised = self.optimise()
+        self.plot()
 
     def create_midline(self):
         ti = np.linspace(0, 1, self.intervals)
@@ -93,6 +90,7 @@ class Track:
                 
     def optimise(self):
         ces = ConvexElasticStretching(self.midline, self.width, self.cones)
+        self.optimised = ces.trajectory
         return ces.trajectory
 
 
@@ -100,10 +98,12 @@ class Track:
         inner = self.inner_spline
         outer = self.outer_spline
         midline1 = self.midline
+        racing_line = self.optimised
         ti = np.linspace(0, 1, self.intervals)
         plt.plot(inner.x, inner.y, 'o', inner.spline(ti)[0,:], inner.spline(ti)[1,:], '-')
         plt.plot(outer.x, outer.y, 'o', outer.spline(ti)[0,:], outer.spline(ti)[1,:], '-')
         plt.plot(midline1.spline(ti)[0,:], midline1.spline(ti)[1,:], '-')
+        plt.plot(racing_line.spline(ti)[0,:], racing_line.spline(ti)[1,:], '-')
 
         plt.legend(['data', 'smoothing spline'])
         plt.grid()
@@ -111,72 +111,7 @@ class Track:
         plt.xlim(-1.75,1.75)
         plt.show()
 
-class Spline:
-    def __init__(self, x, y = None):
-        self.x = np.array(x)
 
-        if y is None:
-            self.t = np.linspace(0, 1, len(x))
-            data = self.x
-        else:
-            assert(len(x) == len(y))
-            self.y = np.array(y)
-            data = np.vstack((self.x, self.y))
-
-            # handle ends by adding hidden colinear points
-            join_point = data.T[0]
-            point1 = data.T[1]
-            point2 = data.T[-2]
-            mid1 = (join_point + point1) / 2
-            mid2 = (join_point + point2) / 2
-            m = (mid2[0] - mid1[0] + ETA) / (mid2[1] - mid1[1] + ETA)
-            c = m * join_point[0] - join_point[1]
-            step = abs(point1[0] - point2[0]) / 4
-            x1 = join_point[0] + step
-            x2 = join_point[0] - step
-            y1 = m * x1 + c
-            y2 = m * x2 + c
-            np.insert(data.T, 1, [x1, y1])
-            np.insert(data.T, -2, [x2, y2])
-
-            self.t = self.calc_dists(data)
-        
-        self.spline = CubicSmoothingSpline(self.t, data)
-        self.curvature = self.calc_curvature(self.spline)
-        
-        
-    def calc_dists(self, data):
-        x = data[0]
-        y = data[1]
-        t = [0] * len(x)
-        for i in range(1, len(x)):
-            t[i] = (t[i-1] + math.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2))
-        return np.divide(np.array(t), t[-1])
-    
-    def calc_curvature(self, spline): 
-        spline = spline.spline
-        ti = np.linspace(0, 1, 200)
-
-        d1 = spline(ti,nu=1)
-        d2 = spline(ti,nu=2)
-        
-        # can't remember what this is calculating
-        k = abs(d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
-        return k
-    
-    def derivative(self, t, power = 1):
-        dx, dy = self.spline.spline(t, power)
-        dy_dx = dy/dx
-        return dy_dx
-    
-    def slope(self, t):
-        derivatives = self.derivative(t)
-        if isinstance(derivatives, np.ndarray):
-            slopes = [np.arctan(derivative) for derivative in derivatives]
-            return slopes
-        else:
-            slope = np.arctan(derivatives)
-            return slope
 
 
 track = Track(inner_x, inner_y, outer_x, outer_y)
