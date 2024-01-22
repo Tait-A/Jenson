@@ -6,12 +6,12 @@ from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 from splines import Spline
 
-ETA = 0.0001
+ETA = 0.001
 MAX_ITERATIONS = 200
 DAMPING_COEFF = 0.01
-SPRING_COEFF = 0.1
+SPRING_COEFF = 0.2
 SAFETY_MARGIN = 0.05
-THRESHOLD = 2
+THRESHOLD = 0.005
 
 class ConvexElasticStretching:
     def __init__(self, trajectory, width, cones, intervals = 200):
@@ -34,7 +34,7 @@ class ConvexElasticStretching:
 
     def optimise(self, trajectory):
         print("optimisation commencing")
-        ti = np.linspace(0, 1, self.intervals)
+        ti = np.linspace(0, 1, self.intervals, endpoint=False)
         nodes = trajectory.spline(ti).T
         tangents = np.zeros(nodes.shape)
         norms = np.zeros(nodes.shape)
@@ -48,11 +48,15 @@ class ConvexElasticStretching:
         # THE LOOP
         for i in range(MAX_ITERATIONS):
             forces = self.calculate_forces(optimised_path, nodes, norms)
-            optimised_path += norms * forces
+            forces = forces.reshape(self.intervals, 1)
 
-            optimised_path = self.check_bounds(optimised_path, nodes, norms)
+            for i in range(self.intervals):
+                forces[i] = self.check_bounds(forces[i], optimised_path[i], norms[i], self.widths[i], nodes[i])
+            optimised_path += forces * norms
 
-            if sum(norms * np.linalg.norm(forces)) < THRESHOLD:
+            # optimised_path = self.check_bounds(optimised_path, nodes, norms)
+
+            if (np.sum(norms * np.linalg.norm(forces)) < THRESHOLD):
                 x = optimised_path[:,0]
                 y = optimised_path[:,1]
                 return Spline(x, y)
@@ -62,26 +66,30 @@ class ConvexElasticStretching:
         return Spline(x, y)
 
 
-    def check_bounds(self, optimised_path, nodes, norms):
-        for i, node in enumerate(optimised_path):
-            if np.linalg.norm(node - self.centres[i]) > self.widths[i]:
-                optimised_path[i] = nodes[i] + norms[i] * self.widths[i]
-        return optimised_path
+    def check_bounds(self, force, node, norm, width, centre):
+        new_node = node + force * norm
+        return force * min(1, (width / np.linalg.norm(new_node - centre)))
         
 
 
     def calculate_forces(self, optimised_path, nodes, norms):
-        forces = np.zeros(optimised_path.shape)
+        forces = np.zeros(optimised_path.shape[0])
         for i, point in enumerate(optimised_path):
-            spring_force_l = SPRING_COEFF * (point - optimised_path[i-1])
-            spring_force_r = SPRING_COEFF * (point - optimised_path[(i+1)%self.intervals])
-            damping_force = DAMPING_COEFF * (point - nodes[i])
+            spring_force_l = SPRING_COEFF * (optimised_path[i-1] - point)
+            spring_force_r = SPRING_COEFF * (optimised_path[(i+1)%self.intervals] - point)
+            damping_force = DAMPING_COEFF * (nodes[i] - point)
 
             total_force = spring_force_l + spring_force_r + damping_force
+
 
             # Project forces onto norms
             projected_force = np.dot(total_force, norms[i])
             forces[i] = projected_force
+
+            if i == 0:
+                print(optimised_path[i])
+                print(total_force)
+                print(projected_force)
         return forces
 
 
