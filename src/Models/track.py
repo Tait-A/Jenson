@@ -102,7 +102,7 @@ class Track:
         ti = np.linspace(0, 1, self.intervals)
         plt.plot(inner.x, inner.y, 'o', inner.spline(ti)[0,:], inner.spline(ti)[1,:], '-')
         plt.plot(outer.x, outer.y, 'o', outer.spline(ti)[0,:], outer.spline(ti)[1,:], '-')
-        plt.plot(midline1.spline(ti)[0,:], midline1.spline(ti)[1,:], '-')
+        # plt.plot(midline1.spline(ti)[0,:], midline1.spline(ti)[1,:], '-')
         plt.plot(racing_line.spline(ti)[0,:], racing_line.spline(ti)[1,:], '-')
 
         plt.legend(['data', 'smoothing spline'])
