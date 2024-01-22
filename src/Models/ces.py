@@ -1,17 +1,16 @@
 # An implementation of the Convex Elastic Stretching algorithm
 
 import numpy as np
-from csaps import CubicSmoothingSpline
 from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 from splines import Spline
 
 ETA = 0.001
-MAX_ITERATIONS = 200
+MAX_ITERATIONS = 2000
 DAMPING_COEFF = 0.01
 SPRING_COEFF = 0.2
-SAFETY_MARGIN = 0.05
-THRESHOLD = 0.005
+SAFETY_MARGIN = 0.06
+THRESHOLD = 0.0001
 
 class ConvexElasticStretching:
     def __init__(self, trajectory, width, cones, intervals = 200):
@@ -43,6 +42,7 @@ class ConvexElasticStretching:
             tangents[i] = [np.cos(slope), np.sin(slope)]
             norms[i] = [-np.sin(slope), np.cos(slope)]
 
+
         optimised_path = nodes.copy()
 
         # THE LOOP
@@ -50,13 +50,11 @@ class ConvexElasticStretching:
             forces = self.calculate_forces(optimised_path, nodes, norms)
             forces = forces.reshape(self.intervals, 1)
 
-            for i in range(self.intervals):
-                forces[i] = self.check_bounds(forces[i], optimised_path[i], norms[i], self.widths[i], nodes[i])
+            for j in range(self.intervals):
+                forces[j] = self.check_bounds(forces[j], optimised_path[j], norms[j], self.widths[j], nodes[j])
             optimised_path += forces * norms
 
-            # optimised_path = self.check_bounds(optimised_path, nodes, norms)
-
-            if (np.sum(norms * np.linalg.norm(forces)) < THRESHOLD):
+            if (np.sum(np.linalg.norm(forces)) < THRESHOLD):
                 x = optimised_path[:,0]
                 y = optimised_path[:,1]
                 return Spline(x, y)
@@ -68,7 +66,7 @@ class ConvexElasticStretching:
 
     def check_bounds(self, force, node, norm, width, centre):
         new_node = node + force * norm
-        return force * min(1, (width / np.linalg.norm(new_node - centre)))
+        return force * min(1, ((width - np.linalg.norm(node - centre))/ np.linalg.norm(new_node - centre)))
         
 
 
@@ -80,16 +78,14 @@ class ConvexElasticStretching:
             damping_force = DAMPING_COEFF * (nodes[i] - point)
 
             total_force = spring_force_l + spring_force_r + damping_force
-
-
             # Project forces onto norms
             projected_force = np.dot(total_force, norms[i])
             forces[i] = projected_force
 
-            if i == 0:
-                print(optimised_path[i])
-                print(total_force)
-                print(projected_force)
+
+        
+        avg_force = np.average(forces)
+        forces = forces - avg_force
         return forces
 
 

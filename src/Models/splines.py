@@ -9,7 +9,7 @@ ETA = 0.0001
 
 
 class Spline:
-    def __init__(self, x, y = None):
+    def __init__(self, x, y = None, intervals = 200):
         self.x = np.array(x)
 
         if y is None:
@@ -39,7 +39,7 @@ class Spline:
             self.t = self.calc_dists(data)
         
         self.spline = CubicSmoothingSpline(self.t, data)
-        self.curvature = self.calc_curvature(self.spline)
+        self.curvature = self.calc_curvature(self)
         
         
     def calc_dists(self, data):
@@ -50,9 +50,10 @@ class Spline:
             t[i] = (t[i-1] + math.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2))
         return np.divide(np.array(t), t[-1])
     
-    def calc_curvature(self, spline): 
-        spline = spline.spline
-        ti = np.linspace(0, 1, 200)
+    def calc_curvature(self): 
+        
+        ti = np.linspace(0, 1, self.intervals, endpoint=False)
+        spline = self.spline.spline
 
         d1 = spline(ti,nu=1)
         d2 = spline(ti,nu=2)
@@ -67,10 +68,21 @@ class Spline:
         return dy_dx
     
     def slope(self, t):
-        derivatives = self.derivative(t)
-        if isinstance(derivatives, np.ndarray):
-            slopes = [np.arctan(derivative) for derivative in derivatives]
+        derivative = self.derivative(t)
+        if isinstance(t, np.ndarray):
+            slopes = [slope(time) for time in t]
             return slopes
         else:
-            slope = np.arctan(derivatives)
+            derivative = self.derivative(t)
+
+            pointA = self.spline.spline(t)
+            pointB = self.spline.spline(t + ETA)
+            diff = 0
+            if pointA[0] > pointB[0]:
+                if pointA[1] >= pointB[1]:
+                    diff = - np.pi
+                else:
+                    diff = np.pi
+            slope = np.arctan(derivative)
+            slope += diff
             return slope
