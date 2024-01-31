@@ -9,6 +9,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from ces import ConvexElasticStretching
 from splines import Spline
+#from input_profile import Profiler
 
 # A class repesenting the track, which is a 2d representation of the track in a 2d space
 inner_x = [0, 0.2,  0.4,  0.59, 0.77, 0.94, 1.1, 1.21, 1.27, 1.31, 1.31,  1.31,  1.29, 1.19,  1,  0.81,  0.63,  0.49,  0.33,  0.19,  0.03,  -0.12, -0.29, -0.44, -0.57, -0.69, -0.8,  -0.9,  -1,    -1.1,-1.16,-1.2,-1.22,-1.23,-1.23,-1.22,-1.21,-1.18,-1.1,-1,-0.85,-0.7,-0.58,-0.5,-0.4,-0.27,-0.14,0]
@@ -92,6 +93,10 @@ class Track:
         ces = ConvexElasticStretching(self.midline, self.width, self.cones)
         self.optimised = ces.trajectory
         return ces.trajectory
+    
+    def profile(self, robot):
+        profiler = Profiler(self.optimised, robot)
+        return profiler
 
 
     def plot(self):
