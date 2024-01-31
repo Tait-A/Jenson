@@ -13,13 +13,13 @@ SAFETY_MARGIN = 0.06
 THRESHOLD = 0.0001
 
 class ConvexElasticStretching:
-    def __init__(self, trajectory, width, cones, intervals = 200):
+    def __init__(self, path, width, cones, intervals = 200):
         self.intervals = intervals
         self.cones = cones
         ti = np.linspace(0, 1, intervals)
-        self.centres = trajectory.spline(ti)
+        self.centres = path.spline(ti)
         self.widths = self.generate_bubbles(self.centres, width, cones)
-        self.trajectory = self.optimise(trajectory)
+        self.trajectory = self.optimise(path)
 
 
     def generate_bubbles(self, centres, width, cones):
@@ -55,12 +55,12 @@ class ConvexElasticStretching:
             optimised_path += forces * norms
 
             if (np.sum(np.linalg.norm(forces)) < THRESHOLD):
-                x = optimised_path[:,0]
-                y = optimised_path[:,1]
+                x = np.append(optimised_path[:,0], optimised_path[0,0])
+                y = np.append(optimised_path[:,1], optimised_path[0,1])
                 return Spline(x, y)
             
-        x = optimised_path[:,0]
-        y = optimised_path[:,1]
+        x = np.append(optimised_path[:,0], optimised_path[0,0])
+        y = np.append(optimised_path[:,1], optimised_path[0,1])
         return Spline(x, y)
 
 
@@ -81,8 +81,6 @@ class ConvexElasticStretching:
             # Project forces onto norms
             projected_force = np.dot(total_force, norms[i])
             forces[i] = projected_force
-
-
         
         avg_force = np.average(forces)
         forces = forces - avg_force
