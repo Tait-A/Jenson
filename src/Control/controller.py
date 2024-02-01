@@ -1,9 +1,14 @@
+from typing import Any, Sequence
 import numpy as np
 import casadi as ca
+import cvxpy as cp
 import sys
+
 sys.path.insert(1,"/Users/alistair/Projects/Dissertation/Jenson/src")
 from Models.robot import Robot
 from Models.splines import Spline
+from Utils.state import State
+from Utils.action import Action
 
 
 
@@ -13,84 +18,69 @@ class MPCController:
         self.pred_horizon = 10
         self.contr_horizon = 5
         self.timestep = 0.1
-        self.localise()
+        self.state = State()
+
+    def run(self):
+        # Run the controller
+        # INPUT: None
+        # OUTPUT: An array of control actions
+        self.state = self.localise(self.state)
+        ref_states = self.getRefStates(self.state)
+
+        steerings = cp.Variable(self.contr_horizon)
+        accelerations = cp.Variable(self.contr_horizon)
+
+        def find_actions(steerings, accelerations):
+            actions = [Action(steerings[i], accelerations[i], self.car) for i in range(self.contr_horizon)]
+            return self.cost(actions, ref_states)
+        
+        objective = cp.Minimize(find_actions(steerings, accelerations))
+        constraints = [steerings <= self.car.steering_lim, steerings >= -self.car.steering_lim, accelerations <= self.car.max_acc, accelerations >= -self.car.max_acc]
+
+        prob = cp.Problem(objective, constraints)
+
+        prob.solve()
+
+        actions = [Action(steerings.value[i], accelerations.value[i], self.car) for i in range(self.contr_horizon)]
+        return actions
 
 
-    def cost(self, steerings, accelerations):
+    def cost(self, actions: list[Action], ref_states: list[State]) -> float:
         # Cost Function to be minimised
         # INPUT: a series of potential control actions (delta_phi and acceleration)
         # OUTPUT: a cost value
-        xs, ys, thetas = self.model(steerings, accelerations)
-        pass
+        states = self.model(actions)
+        cost = 0
+        for i in range(1,len(states)):
+            cost += states[i].distance(ref_states[i]) ** 2 + (0.25 * abs(states[i].theta - states[i-1].theta)) ** 2
+        return cost
 
-    def model(self, actions):
+    def model(self, actions: list[Action]) -> list[State]:
         # Car Dynamics Model
         # INPUT: a series of potential control actions (delta_phi and acceleration)
         # OUTPUT: a series of predicted states (x, y, theta)
+        states = []
+        cur_state = self.state
+        states.append(cur_state)
+        for action in actions:
+            state = action.apply(cur_state)
+            states.append(state)
+            cur_state = state
+        return states
 
+    def getRefStates(self, state: State) -> list[State]:
+        # Get reference states from the trajectory by calculating the closest state and returning the next n states (n is pred_horizon)
+        # INPUT: current state
+        # OUTPUT: a series of reference states
+
+        # Potentially want to edit this function to find states in front of the car
+        dists = [point.distance(state) for point in self.trajectory]
+        closest = np.argmin(dists)
+        if closest + self.pred_horizon > len(self.trajectory):
+            return self.trajectory[closest:] + self.trajectory[:(closest+self.pred_horizon-len(self.trajectory))]
+        return self.trajectory[closest:closest+self.pred_horizon]
+
+        
+
+    def localise(self, prev_state) -> State:
         pass
-
-
-
-    def localise(self):
-        pass
-        
-
-    class State:
-        def __init__(self, x, y, theta, v = 0, w = 0, timestep = 0.1):
-            self.x = x
-            self.y = y
-            self.theta = theta
-            self.v = v
-            self.w = w
-            self.timestep = timestep
-
-        def new_state_local(self, x_new, y_new, theta_new) -> "MPCController.State":
-            delta_theta = theta_new - self.theta
-            w_new = delta_theta / self.timestep
-            dist = np.sqrt((x_new - self.x)**2 + (y_new - self.y)**2)
-            turn_radius = dist / (2 * np.sin(delta_theta/2))
-            arc_length = turn_radius * delta_theta
-            v_new = self.v + (2 * (arc_length - self.v * self.timestep)) / self.timestep
-            return MPCController.State(x_new, y_new, theta_new, v_new, w_new)
-    
-        
-    class Action:
-        def __init__(self, steering, acceleration, car: Robot):
-            self.steering = steering
-            self.acceleration = acceleration
-            self.car = car
-
-        def apply(self, state: "MPCController.State") -> "MPCController.State":
-            # apply the action to the state to get a new state
-            v_old = state.v
-            w_old = state.w
-            v_new = v_old + self.acceleration
-            w_new = (v_new/self.car.wheelbase) * np.tan(self.steering)
-            w_acc = (w_new - w_old) * state.timestep
-            delta_theta = ((w_old + w_new)/2) * state.timestep
-            theta_new = state.theta + delta_theta
-            dx, dy = self.integrate(v_new, v_old, state.theta, w_old, w_acc, 10)
-
-            x_new = state.x + dx
-            y_new = state.y + dy
-
-            return MPCController.State(x_new, y_new, theta_new, v_new, w_new)
-
-        
-        def integrate(self, v, u, theta, w, w_a, steps): # approximate integration
-            dx = 0
-            dy = 0
-            for i in range(steps):
-                t = (2*i+1)
-
-                inst_v = t/(2 * steps) * v + (2 * steps - t)/(2 * steps) * u
-                inst_theta = theta + w * t + (w_a * t**2) / 2
-
-                dx += inst_v * np.cos(inst_theta) * self.timestep/steps
-                dy += inst_v * np.sin(inst_theta) * self.timestep/steps
-            return dx, dy
-            
-
-
-
