@@ -3,6 +3,7 @@ from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 from splines import Spline
 from robot import Robot
+from Utils.state import State
 
 class Profiler:
     def __init__(self, trajectory: Spline, robot: Robot, intervals = 200):
@@ -12,7 +13,7 @@ class Profiler:
 
         self.profile()
 
-    def profile(self):
+    def profile(self) -> [State]:
         robot = self.robot
         trajectory = self.trajectory
         ti = np.linspace(0, 1, self.intervals, endpoint=False)
@@ -44,7 +45,7 @@ class Profiler:
                 first_lap_velocity[i] = max_velocity
 
         if velocity[0] - first_lap_velocity[-1] > max_acc:
-            velocity[0] = first_lap_velocity[-1] + max_acc:
+            velocity[0] = first_lap_velocity[-1] + max_acc
 
         for i in range(1, len(velocity)):
             if velocity[i] - velocity[i-1] > max_acc:
@@ -52,7 +53,3 @@ class Profiler:
             if velocity[i] > max_velocity:
                 velocity[i] = max_velocity
 
-
-
-
-        acceleration =
