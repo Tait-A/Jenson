@@ -9,7 +9,7 @@ ETA = 0.0001
 
 
 class Spline:
-    def __init__(self, x, y = None):
+    def __init__(self, x, y = None, t = None):
         self.x = np.array(x)
 
         if y is None:
@@ -36,7 +36,10 @@ class Spline:
             np.insert(data.T, 1, [x1, y1])
             np.insert(data.T, -2, [x2, y2])
 
-            self.t = self.calc_dists(data)
+            if t:
+                self.t = t
+            else:
+                self.t = self.calc_dists(data)
         
         self.spline = CubicSmoothingSpline(self.t, data)
         
@@ -92,3 +95,8 @@ class Spline:
             slope = np.arctan(derivative)
             slope += diff
             return slope
+        
+    def lin_dist(self, t1, t2):
+        point1 = self.spline.spline(t1)
+        point2 = self.spline.spline(t2)
+        return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
