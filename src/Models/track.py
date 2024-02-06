@@ -8,8 +8,11 @@ from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from ces import ConvexElasticStretching
+import sys
+sys.path.insert(1,"/Users/alistair/Projects/Dissertation/Jenson/src")
 from splines import Spline
-#from input_profile import Profiler
+from input_profile import Profiler
+from robot import Robot
 
 # A class repesenting the track, which is a 2d representation of the track in a 2d space
 inner_x = [0, 0.2,  0.4,  0.59, 0.77, 0.94, 1.1, 1.21, 1.27, 1.31, 1.31,  1.31,  1.29, 1.19,  1,  0.81,  0.63,  0.49,  0.33,  0.19,  0.03,  -0.12, -0.29, -0.44, -0.57, -0.69, -0.8,  -0.9,  -1,    -1.1,-1.16,-1.2,-1.22,-1.23,-1.23,-1.22,-1.21,-1.18,-1.1,-1,-0.85,-0.7,-0.58,-0.5,-0.4,-0.27,-0.14,0]
@@ -17,6 +20,7 @@ inner_y = [1, 0.99, 0.96, 0.9,  0.8,  0.67, 0.5, 0.3,  0.1,  -0.1, -0.29, -0.48,
 
 outer_x = [0,0.2,0.4,0.6,0.8,1,1.2,1.35,1.45,1.52,1.57,1.6,1.6,1.6,1.58,1.5,1.37,1.2,1,0.8,0.61,0.44,0.28,0.12,-0.05,-0.24,-0.43,-0.56,-0.67,-0.81,-0.99,-1.17,-1.33,-1.4,-1.45,-1.48,-1.5,-1.5,-1.5,-1.48,-1.45,-1.38,-1.2,-1,-0.8,-0.7,-0.55,-0.38,-0.19,0]
 outer_y = [1.3,1.29,1.26,1.2,1.12,1,0.84,0.67,0.47,0.27,0.05,-0.2,-0.4,-0.6,-0.8,-0.99,-1.13,-1.24,-1.3,-1.28,-1.2,-1.05,-0.89,-0.72,-0.6,-0.56,-0.63,-0.79,-0.97,-1.12,-1.2,-1.17,-1.02,-0.82,-0.61,-0.4,-0.2,0,0.2,0.4,0.58,0.78,0.9,0.89,0.8,0.98,1.12,1.22,1.28,1.3]
+
 
 ETA = 0.0001
 
@@ -32,9 +36,12 @@ class Track:
         self.intervals = intervals
         self.midline, self.width = self.create_midline()
         self.optimised = self.optimise()
+        self.trajectory = self.profile(Robot())
         self.plot()
 
+
     def create_midline(self):
+        print("calculating midline")
         ti = np.linspace(0, 1, self.intervals)
         outer = self.outer_spline.spline(ti)
         outer_x = np.array(outer[0])
@@ -53,7 +60,7 @@ class Track:
         midline_naive = Spline(midline_x, midline_y)
 
         width, midline = self.calculate_width(midline_naive)
-
+        print("midline calculated")
         return midline, width
 
     def calculate_width(self, midline_naive):
@@ -92,11 +99,15 @@ class Track:
     def optimise(self):
         ces = ConvexElasticStretching(self.midline, self.width, self.cones)
         self.optimised = ces.trajectory
+        print("path optimised")
         return ces.trajectory
     
     def profile(self, robot):
+        print("profiling commencing")
         profiler = Profiler(self.optimised, robot)
-        return profiler
+        profile = profiler.profile()
+        print("trajectory profiled")
+        return profile
 
 
     def plot(self):
