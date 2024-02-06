@@ -5,17 +5,14 @@ import math
 import time
 import sys
 import os
+sys.path.insert(1,"/Users/alistair/Projects/Dissertation/Jenson/src")
+from Utils.state import State
 
 GRAVITY = 9.81
 
 class Robot:
-    def __init__(self, x=0, y=0, theta=0, phi=0, v=0, w=0, width=0, wheelbase=0.2, mass = 1, steering_lim=45, max_speed = 3, max_acc = 0.5, friction = 0.5):
-        self.x = x                      # x position
-        self.y = y                      # y position
-        self.theta = theta              # angle of robot
-        self.phi = phi                  # steering angle of robot
-        self.v = v                      # linear velocity
-        self.w = w                      # angular velocity
+    def __init__(self, state = State(0,1.15,0), width=0, wheelbase=0.2, mass = 1, steering_lim=45, max_speed = 3, max_acc = 0.5, friction = 0.5):
+        self.state = state
         self.width = width              # width of robot
         self.wheelbase = wheelbase      # wheelbase of robot
         self.mass = mass                # mass of robot
