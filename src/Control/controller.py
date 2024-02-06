@@ -9,16 +9,19 @@ from Models.robot import Robot
 from Models.splines import Spline
 from Utils.state import State
 from Utils.action import Action
+from Utils.trajectory import Trajectory
 
 
 
 class MPCController:
-    def __init__(self, car: Robot, trajectory: Spline):
+    def __init__(self, car: Robot, trajectories: list[Trajectory]):
         self.car = car
         self.pred_horizon = 10
         self.contr_horizon = 5
         self.timestep = 0.1
-        self.state = State()
+        self.state = car.state
+        self.trajectories = trajectories
+        self.laps = len(self.trajectories)
 
     def run(self):
         # Run the controller
@@ -27,11 +30,13 @@ class MPCController:
         self.state = self.localise(self.state)
         ref_states = self.getRefStates(self.state)
 
-        steerings = cp.Variable(self.contr_horizon)
-        accelerations = cp.Variable(self.contr_horizon)
+        horizon = min(self.contr_horizon, len(ref_states))
+
+        steerings = cp.Variable(horizon)
+        accelerations = cp.Variable(horizon)
 
         def find_actions(steerings, accelerations):
-            actions = [Action(steerings[i], accelerations[i], self.car) for i in range(self.contr_horizon)]
+            actions = [Action(steerings[i], accelerations[i], self.car) for i in range(horizon)]
             return self.cost(actions, ref_states)
         
         objective = cp.Minimize(find_actions(steerings, accelerations))
@@ -41,7 +46,7 @@ class MPCController:
 
         prob.solve()
 
-        actions = [Action(steerings.value[i], accelerations.value[i], self.car) for i in range(self.contr_horizon)]
+        actions = [Action(steerings.value[i], accelerations.value[i], self.car) for i in range(horizon)]
         return actions
 
 
@@ -74,11 +79,11 @@ class MPCController:
         # OUTPUT: a series of reference states
 
         # Potentially want to edit this function to find states in front of the car
-        dists = [point.distance(state) for point in self.trajectory]
+        dists = [point.distance(state) for point in self.trajectory.states]
         closest = np.argmin(dists)
         if closest + self.pred_horizon > len(self.trajectory):
-            return self.trajectory[closest:] + self.trajectory[:(closest+self.pred_horizon-len(self.trajectory))]
-        return self.trajectory[closest:closest+self.pred_horizon]
+            return self.trajectory[closest:] # + self.trajectory[:(closest+self.pred_horizon-len(self.trajectory))]
+        return self.trajectory.states[closest:closest+self.pred_horizon]
 
         
 
