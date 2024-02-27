@@ -7,7 +7,7 @@ from csaps import CubicSmoothingSpline
 from scipy.interpolate import PPoly
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
-from ces import ConvexElasticStretching
+from qes import QuickElasticSmoothing
 import sys
 sys.path.insert(1,"/Users/alistair/Projects/Dissertation/Jenson/src")
 from splines import Spline
@@ -97,7 +97,7 @@ class Track:
         return width_spline, midpoints_spline
                 
     def optimise(self):
-        ces = ConvexElasticStretching(self.midline, self.width, self.cones)
+        ces = QuickElasticSmoothing(self.midline, self.width, self.cones)
         self.optimised = ces.trajectory
         print("path optimised")
         return ces.trajectory

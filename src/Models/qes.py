@@ -12,7 +12,7 @@ SPRING_COEFF = 0.2
 SAFETY_MARGIN = 0.06
 THRESHOLD = 0.0001
 
-class ConvexElasticStretching:
+class QuickElasticSmoothing:
     def __init__(self, path, width, cones, intervals = 200):
         self.intervals = intervals
         self.cones = cones

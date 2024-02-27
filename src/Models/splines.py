@@ -59,9 +59,9 @@ class Spline:
         d1 = spline(ti,nu=1)
         d2 = spline(ti,nu=2)
         
-        k = abs(d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
+        k = (d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
         self.curvature = k
-        r = np.array([self.calc_radius(k) for k in self.curvature])
+        r = np.array([self.calc_radius(abs(k)) for k in self.curvature])
         self.radius_curvature = r
         return k, r
     

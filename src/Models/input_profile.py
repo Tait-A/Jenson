@@ -30,9 +30,11 @@ class Profiler:
         nodes = path.spline(ti).T
 
         # calculate the curvature of the trajectory and radius of curvature
-        _, radius = path.calc_curvature(self.intervals)
+        k, radius = path.calc_curvature(self.intervals)
 
-        steering_angle = np.arctan(robot.wheelbase / radius)
+        sign = np.sign(k)
+
+        steering_angle = sign * np.arctan(robot.wheelbase / radius)
         # ensure all steering angle values are below the steering limit
         steering_angle = np.where(abs(steering_angle) > steering_lim, np.sign(steering_angle) * steering_lim, steering_angle)
         steering_profile = Spline(steering_angle, t = ti)
