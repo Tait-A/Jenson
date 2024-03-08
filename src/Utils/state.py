@@ -9,8 +9,8 @@ class State:
         self.w = w
         self.timestep = timestep
 
-    def new_state_local(self, x_new, y_new, theta_new) -> "State":
-        delta_theta = theta_new - self.theta
+    def new_state_local(self, x_new, y_new, theta_new) -> "State": #Not used anywhere
+        delta_theta = theta_new - self.theta # NEEDS WRAPAROUND FIXING
         w_new = delta_theta / self.timestep
         dist = np.sqrt((x_new - self.x)**2 + (y_new - self.y)**2)
         turn_radius = dist / (2 * np.sin(delta_theta/2))

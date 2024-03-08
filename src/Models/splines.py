@@ -1,9 +1,7 @@
 import numpy as np
 import math
 from csaps import CubicSmoothingSpline
-from scipy.interpolate import PPoly
-from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
+
 
 ETA = 0.0001
 

@@ -51,6 +51,8 @@ class Profiler:
 
 
 
+        #Henri uses a backwards pass to ensure that the updates dont push the velocity beyond it's limits with braking
+
         for i in range(1, len(first_lap_velocity)):
             dist = self.path.lin_dist(ti[i-1],ti[i])
             t = 2 * dist / (first_lap_velocity[i] + first_lap_velocity[i-1])
@@ -99,7 +101,7 @@ class Profiler:
             states[lap].append(state)
             actions[lap].append(action)
 
-            d += v * STATE_TIMESTEP
+            d += v * STATE_TIMESTEP + 0.5 * acc * STATE_TIMESTEP**2
 
         
         self.trajectories = [Trajectory(states[i], actions[i]) for i in range(self.laps)]

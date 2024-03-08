@@ -57,7 +57,7 @@ class MPCController:
         states = self.model(actions)
         cost = 0
         for i in range(1,len(states)):
-            cost += states[i].distance(ref_states[i]) ** 2 + (0.25 * abs(states[i].theta - states[i-1].theta)) ** 2
+            cost += states[i].distance(ref_states[i]) ** 2 
         return cost
 
     def model(self, actions: list[Action]) -> list[State]:
