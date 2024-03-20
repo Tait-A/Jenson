@@ -7,14 +7,14 @@ ETA = 0.0001
 
 
 class Spline:
-    def __init__(self, x, y = None, t = None):
+    def __init__(self, x, y=None, t=None):
         self.x = np.array(x)
 
         if y is None:
             self.t = np.linspace(0, 1, len(x))
             data = self.x
         else:
-            assert(len(x) == len(y))
+            assert len(x) == len(y)
             self.y = np.array(y)
             data = np.vstack((self.x, self.y))
 
@@ -37,43 +37,41 @@ class Spline:
             if t:
                 self.t = t
             else:
-                self.t = self.calc_dists(data)
-        
+                self.t, self.length = self.calc_dists(data)
+
         self.spline = CubicSmoothingSpline(self.t, data)
-        
-        
+
     def calc_dists(self, data):
         x = data[0]
         y = data[1]
         t = [0] * len(x)
         for i in range(1, len(x)):
-            t[i] = (t[i-1] + math.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2))
-        return np.divide(np.array(t), t[-1])
-    
-    def calc_curvature(self, intervals = 200): 
+            t[i] = t[i - 1] + math.sqrt((x[i] - x[i - 1]) ** 2 + (y[i] - y[i - 1]) ** 2)
+        return np.divide(np.array(t), t[-1]), t[-1]
+
+    def calc_curvature(self, intervals=200):
         ti = np.linspace(0, 1, intervals, endpoint=False)
         spline = self.spline.spline
 
-        d1 = spline(ti,nu=1)
-        d2 = spline(ti,nu=2)
-        
-        k = (d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0]**2 + d1[1]**2, 1.5)
+        d1 = spline(ti, nu=1)
+        d2 = spline(ti, nu=2)
+
+        k = (d1[0] * d2[1] - d1[1] * d2[0]) / np.power(d1[0] ** 2 + d1[1] ** 2, 1.5)
         self.curvature = k
         r = np.array([self.calc_radius(abs(k)) for k in self.curvature])
         self.radius_curvature = r
         return k, r
-    
+
     def calc_radius(self, k):
         if k >= 0.001:
-            return 1/k
-        return 1000 # signifies radius is so large that no turning signal is required
-    
-    
-    def derivative(self, t, power = 1):
+            return 1 / k
+        return 1000  # signifies radius is so large that no turning signal is required
+
+    def derivative(self, t, power=1):
         dx, dy = self.spline.spline(t, power)
-        dy_dx = dy/dx
+        dy_dx = dy / dx
         return dy_dx
-    
+
     def slope(self, t):
         derivative = self.derivative(t)
         if isinstance(t, np.ndarray):
@@ -87,14 +85,23 @@ class Spline:
             diff = 0
             if pointA[0] > pointB[0]:
                 if pointA[1] >= pointB[1]:
-                    diff = - np.pi
+                    diff = -np.pi
                 else:
                     diff = np.pi
             slope = np.arctan(derivative)
             slope += diff
             return slope
-        
+
     def lin_dist(self, t1, t2):
         point1 = self.spline.spline(t1)
         point2 = self.spline.spline(t2)
-        return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+        return np.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+
+    def visualise_points(self):
+        import matplotlib.pyplot as plt
+
+        if hasattr(self, "y"):
+            plt.plot(self.x, self.y, "o")
+        else:
+            plt.plot(self.x, self.t, "o")
+        plt.show()
