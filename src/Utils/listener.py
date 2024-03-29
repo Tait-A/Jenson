@@ -3,8 +3,10 @@ import numpy as np
 import socket
 import struct
 import sys
+import os
 sys.path.insert(1,"/afs/inf.ed.ac.uk/user/s20/s2051131/Jenson/src")
 from config import HOST_IPV4
+import config
 
 
 class VideoServer:
@@ -65,7 +67,8 @@ class VideoServer:
             if image.shape[0] == 1080 and image.shape[1] == 1920:
                 # Process the 1080p BGR image here
                 self.frames.append(image)
-                cv2.imwrite("output_image" + str(frame_count) + ".jpg", image)
+                path = os.path.join(config.SRC_PATH, "Output")
+                cv2.imwrite(path + "/output_image" + str(frame_count) + ".jpg", image)
             else:
                 print("Received frame is not 1080p.")
         except Exception as e:
