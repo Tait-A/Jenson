@@ -97,7 +97,7 @@ class Spline:
         point2 = self.spline.spline(t2)
         return np.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
-    def visualise_points(self):
+    def plot(self):
         import matplotlib.pyplot as plt
 
         if hasattr(self, "y"):
