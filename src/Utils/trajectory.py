@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from Utils.action import Action
 from Utils.state import State
 import json
@@ -35,10 +36,21 @@ class Trajectory:
         # Plot the states of the trajectory
         # INPUT: None
         # OUTPUT: None
-        import matplotlib.pyplot as plt
 
         x = [state.x for state in self.states]
         y = [state.y for state in self.states]
+        plt.plot(x, y)
+        plt.show()
+
+    def plot_actions(self):
+        cur_state = self.states[0]
+        x = [cur_state.x]
+        y = [cur_state.y]
+        for action in self.actions:
+            new_state = action.apply(cur_state)
+            x.append(new_state.x)
+            y.append(new_state.y)
+            cur_state = new_state
         plt.plot(x, y)
         plt.show()
 

@@ -1,4 +1,8 @@
 import numpy as np
+import sys
+import os
+
+sys.path.insert(1, "/Users/alistair/Projects/Dissertation/Jenson/src")
 from Models.robot import Robot
 from Utils.state import State
 
@@ -15,36 +19,40 @@ class Action:
         v_old = state.v
         w_old = state.w
         v_new = v_old + self.acceleration * self.timestep
-        w_new = (v_new / self.car.wheelbase) * self.tan_approx(self.steering)
-        w_acc = (w_new - w_old) * state.timestep
+        w_new = (min(v_new, self.car.max_speed) / self.car.wheelbase) * np.tan(
+            self.steering
+        )
         delta_theta = ((w_old + w_new) / 2) * state.timestep
         theta_new = state.theta + delta_theta
-        dx, dy = self.integrate(v_new, v_old, state.theta, w_old, w_acc)
+        dx, dy = self.integrate(v_new, v_old, state.theta, w_old, w_new)
 
         x_new = state.x + dx
         y_new = state.y + dy
 
         return State(x_new, y_new, theta_new, v_new, w_new)
 
-    def tan_approx(self, x):  # taylor approximation of tan(x) for convexity
-        return x + (x**3) / 3 + (x**5) * 2 / 15 + (x**7) * 17 / 315
-
-    def cos_approx(self, x):
-        return 1 - (x**2) / 2 + (x**4) / 24 - (x**6) / 720
-
-    def sin_approx(self, x):
-        return x - (x**3) / 6 + (x**5) / 120 - (x**7) / 5040
-
-    def integrate(self, v, u, theta, w, w_a, steps=20):  # approximate integration
+    def integrate(self, v, u, theta, w_o, w_n, steps=20):  # approximate integration
         dx = 0
         dy = 0
-        for i in range(steps):
-            t = 2 * i + 1
-            inst_v = t / (2 * steps) * v + (2 * steps - t) / (2 * steps) * u
-            inst_theta = theta + w * t + (w_a * t**2) / 2
+        acc = v - u
+        w_acc = w_n - w_o
 
-            dx += inst_v * self.cos_approx(inst_theta) * self.timestep / steps
-            dy += inst_v * self.sin_approx(inst_theta) * self.timestep / steps
+        for i in range(steps):
+            step = 2 * i + 1
+            frac = step / (2 * steps)
+            t = frac * self.timestep
+
+            inst_v = u + acc * t
+            if inst_v > self.car.max_speed:
+                inst_v = self.car.max_speed
+
+            inst_theta = theta + (w_o + w_acc * frac) * t
+
+            dy += inst_v * np.sin(inst_theta) * self.timestep / steps
+            dx += inst_v * np.cos(inst_theta) * self.timestep / steps
+
+            # dx += inst_v * self.cos_approx(inst_theta) * self.timestep / steps
+            # dy += inst_v * self.sin_approx(inst_theta) * self.timestep / steps
         return dx, dy
 
     def to_dict(self):

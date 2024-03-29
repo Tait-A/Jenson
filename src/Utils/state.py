@@ -38,3 +38,6 @@ class State:
         print(
             f"x: {self.x}, \ny: {self.y}, \ntheta: {self.theta}, \nv: {self.v}, \nw: {self.w}, \ntimestep: {self.timestep}"
         )
+
+    def copy(self):
+        return State(self.x, self.y, self.theta, self.v, self.w, self.timestep)
