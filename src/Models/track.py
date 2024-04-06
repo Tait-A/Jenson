@@ -35,7 +35,8 @@ class Track:
         self.intervals = intervals
         self.midline, self.width = self.create_midline()
         self.optimised = self.optimise()
-        self.trajectories = self.profile(car)
+        # self.unnormalised = self.optimise(False)
+        self.trajectories = self.profile(self.optimised, car)
         for i, trajectory in enumerate(self.trajectories):
             json_dir = os.path.join(config.SRC_PATH, "JSON")
             trajectory.write_to_json(json_dir + f"/trajectory_{i}.json")
@@ -97,15 +98,14 @@ class Track:
 
         return width_spline, midpoints_spline
 
-    def optimise(self):
-        ces = QuickElasticSmoothing(self.midline, self.width, self.cones)
-        self.optimised = ces.trajectory
+    def optimise(self, normalise=True):
+        ces = QuickElasticSmoothing(self.midline, self.width, self.cones, normalise)
         print("path optimised")
         return ces.trajectory
 
-    def profile(self, robot):
+    def profile(self, path, robot):
         print("profiling commencing")
-        profiler = Profiler(self.optimised, robot)
+        profiler = Profiler(path, robot)
         profile = profiler.profile()
         print("trajectory profiled")
         return profile
@@ -115,20 +115,54 @@ class Track:
         outer = self.outer_spline
         midline1 = self.midline
         racing_line = self.optimised
+        # unoptimised = self.unnormalised
         ti = np.linspace(0, 1, self.intervals)
-        plt.plot(
-            inner.x, inner.y, "o", inner.spline(ti)[0, :], inner.spline(ti)[1, :], "-"
+        one = plt.plot(
+            inner.x,
+            inner.y,
+            "o",
+            outer.x,
+            outer.y,
+            "o",
+            color="tab:blue",
         )
-        plt.plot(
-            outer.x, outer.y, "o", outer.spline(ti)[0, :], outer.spline(ti)[1, :], "-"
+        two = plt.plot(
+            inner.spline(ti)[0, :],
+            inner.spline(ti)[1, :],
+            "-",
+            outer.spline(ti)[0, :],
+            outer.spline(ti)[1, :],
+            "-",
+            color="tab:orange",
         )
-        # plt.plot(midline1.spline(ti)[0,:], midline1.spline(ti)[1,:], '-')
-        plt.plot(racing_line.spline(ti)[0, :], racing_line.spline(ti)[1, :], "-")
+        five = plt.plot(
+            midline1.spline(ti)[0, :], midline1.spline(ti)[1, :], "-", color="tab:green"
+        )
+        six = plt.plot(
+            racing_line.spline(ti)[0, :],
+            racing_line.spline(ti)[1, :],
+            "-",
+            color="tab:red",
+        )
+        # seven = plt.plot(
+        #     unoptimised.spline(ti)[0, :],
+        #     unoptimised.spline(ti)[1, :],
+        #     "-",
+        #     color="tab:purple",
+        # )
 
-        plt.legend(["data", "smoothing spline"])
         plt.grid()
         plt.ylim(-1.5, 1.5)
         plt.xlim(-1.75, 1.75)
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.title("Track - With Mid and Racing Lines")
+        plt.legend(
+            [one[0], two[0], five[0], six[0]],
+            ["data", "boundary", "midline", "optimised"],
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+        )
         plt.show()
 
     def write_to_json(self, filename):
