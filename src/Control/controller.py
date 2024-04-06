@@ -7,6 +7,7 @@ import sys
 import random
 import os
 import matplotlib.pyplot as plt
+import time
 
 sys.path.insert(1, "/Users/alistair/Projects/Dissertation/Jenson/src")
 from Models.robot import Robot
@@ -33,6 +34,10 @@ class MPCController:
         # INPUT: None
         # OUTPUT: An array of control actions
         # self.state = self.localise(self.state)
+
+        # Start Timer
+        start = time.time()
+
         self.state = state
         ref_states, ref_actions = self.getRefStates(self.state)
 
@@ -78,7 +83,11 @@ class MPCController:
         print(f"Cost: {self.cost(actions, ref_states)}")
 
         self.i += 1
-        return actions, states
+        # Get end time
+        end = time.time()
+        time_taken = end - start
+        print(f"Time taken: {time_taken}")
+        return actions, states, time_taken
 
     def cost(self, actions: list[Action], ref_states: list[State]) -> float:
         # Cost Function to be minimised
@@ -132,9 +141,6 @@ class MPCController:
 
         dists = [point.distance(state) for point in trajectory.states]
         closest = np.argmin(dists)
-
-        print("Closest: ", closest)
-        print("Length: ", trajectory.length)
 
         if closest + self.pred_horizon >= trajectory.length:
             self.lap += 1  # LAP CHANGE DETERMINATION NEEDS FIXING
@@ -190,13 +196,17 @@ def generate_loc_states(controller: MPCController, n: int, noise: float) -> list
 def test_controller(controller: MPCController):
 
     loc_states = generate_loc_states(controller, 4, 0.1)
-
+    total_time = 0
     # Run the controller and save the output to control_0.json
     for i, state in enumerate(loc_states):
-        actions, states = controller.run(state)
+        actions, states, time = controller.run(state)
+        total_time += time
         trajectory = Trajectory(states[: len(actions)], actions)
         path = os.path.join(config.SRC_PATH, "JSON")
         trajectory.write_to_json(path + f"/control_{i}.json")
+
+    avg_time = total_time / len(loc_states)
+    print(f"Average time taken: {avg_time}")
 
 
 def plot_tests(controller: MPCController):
@@ -251,6 +261,6 @@ if __name__ == "__main__":
     controller = MPCController(car, [trajectory1, trajectory2])
 
     # Test the controller
-    # test_controller(controller)
+    test_controller(controller)
 
     plot_tests(controller)
