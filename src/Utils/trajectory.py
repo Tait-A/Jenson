@@ -54,6 +54,36 @@ class Trajectory:
         plt.plot(x, y)
         plt.show()
 
+    def plot_states_and_actions(self):
+        cur_state = self.states[0]
+        x = [cur_state.x]
+        y = [cur_state.y]
+        for action in self.actions:
+            new_state = action.apply(cur_state)
+            x.append(new_state.x)
+            y.append(new_state.y)
+            cur_state = new_state
+
+        x2 = [state.x for state in self.states]
+        y2 = [state.y for state in self.states]
+        x2.append(self.states[0].x)
+        y2.append(self.states[0].y)
+
+        plt.plot(x2, y2)
+        plt.plot(x, y)
+        plt.grid()
+        plt.ylim(-1.5, 1.5)
+        plt.xlim(-1.75, 1.75)
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.title("Parameterised States vs Modelled Actions")
+        plt.legend(
+            ["States", "Modelled Actions"],
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+        )
+        plt.show()
+
     @classmethod
     def from_json(cls, json_file, car) -> "Trajectory":
         # Load a trajectory from a json file

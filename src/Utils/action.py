@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import os
+import casadi as ca
 
 sys.path.insert(1, "/Users/alistair/Projects/Dissertation/Jenson/src")
 from Models.robot import Robot
@@ -19,9 +20,8 @@ class Action:
         v_old = state.v
         w_old = state.w
         v_new = v_old + self.acceleration * self.timestep
-        w_new = (min(v_new, self.car.max_speed) / self.car.wheelbase) * np.tan(
-            self.steering
-        )
+        v_new = ca.fmin(v_new, self.car.max_speed)
+        w_new = (v_new / self.car.wheelbase) * np.tan(self.steering)
         delta_theta = ((w_old + w_new) / 2) * state.timestep
         theta_new = state.theta + delta_theta
         dx, dy = self.integrate(v_new, v_old, state.theta, w_old, w_new)
@@ -43,8 +43,6 @@ class Action:
             t = frac * self.timestep
 
             inst_v = u + acc * t
-            if inst_v > self.car.max_speed:
-                inst_v = self.car.max_speed
 
             inst_theta = theta + (w_o + w_acc * frac) * t
 
