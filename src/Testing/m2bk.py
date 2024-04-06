@@ -1,4 +1,5 @@
 import os
+import sys
 
 import math
 import numpy as np
@@ -10,47 +11,57 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D
 
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
+import config
+
 
 class DatasetHandler:
 
-    def __init__(self):
+    def __init__(self, no_images):
         # Define number of frames
-        self.num_frames = 100
+        self.num_frames = no_images
 
         # Set up paths
         current_path = os.path.dirname(__file__)
-        current_dir = current_path.split('/')[0:-1]
+        current_dir = current_path.split("/")[0:-1]
 
-        absolute_path = '/' + os.path.join(*current_dir)
-        self.image_dir = os.path.join(absolute_path, "Output")
+        absolute_path = config.SRC_PATH
+        self.image_dir = os.path.join(absolute_path, "Output/linear")
 
         # Set up data holders
         self.images = []
 
-        self.k = np.array([[3953.68754, 0, 2152.3233],
-                           [0, 3964.49423, 1451.76742],
-                           [0,   0,   1]], dtype=np.float32)
-        
+        self.k = np.array(
+            [[1765.4713, 0, 913.83713], [0, 1756.59718, 609.839517], [0, 0, 1]],
+            dtype=np.float32,
+        )
 
         # Read first frame
         self.read_frame()
-        print("\r" + ' '*20 + "\r", end='')
-        
+        print("\r" + " " * 20 + "\r", end="")
+
     def read_frame(self):
         self._read_image()
-              
+
     def _read_image(self):
         for i in range(0, self.num_frames):
             im_name = "{0}/output_image{1}.jpg".format(self.image_dir, str(i))
             assert os.path.exists(im_name)
             self.images.append(cv.imread(im_name, flags=1))
-            print ("Data loading: {0}%".format(int((i + self.num_frames) / (self.num_frames * 2 - 1) * 100)), end="\r")
-            
-        
-def visualize_camera_movement(image1, image1_points, image2, image2_points, is_show_img_after_move=False):
+            print(
+                "Data loading: {0}%".format(
+                    int((i + self.num_frames) / (self.num_frames * 2 - 1) * 100)
+                ),
+                end="\r",
+            )
+
+
+def visualize_camera_movement(
+    image1, image1_points, image2, image2_points, is_show_img_after_move=False
+):
     image1 = image1.copy()
     image2 = image2.copy()
-    
+
     for i in range(0, len(image1_points)):
         # Coordinates of a point on t frame
         p1 = (int(image1_points[i][0]), int(image1_points[i][1]))
@@ -63,8 +74,8 @@ def visualize_camera_movement(image1, image1_points, image2, image2_points, is_s
 
         if is_show_img_after_move:
             cv.circle(image2, p2, 5, (255, 0, 0), 1)
-    
-    if is_show_img_after_move: 
+
+    if is_show_img_after_move:
         return image2
     else:
         return image1
@@ -87,7 +98,7 @@ def visualize_trajectory(trajectory):
 
     for i in range(0, trajectory.shape[1]):
         current_pos = trajectory[:, i]
-        
+
         locX.append(current_pos.item(0))
         locY.append(current_pos.item(1))
         locZ.append(current_pos.item(2))
@@ -122,29 +133,46 @@ def visualize_trajectory(trajectory):
     ZY_plt = plt.subplot(gspec[0, 1:])
     YX_plt = plt.subplot(gspec[1:, 0])
     traj_main_plt = plt.subplot(gspec[1:, 1:])
-    D3_plt = plt.subplot(gspec[0, 0], projection='3d')
+    D3_plt = plt.subplot(gspec[0, 0], projection="3d")
 
     # Actual trajectory plotting ZX
     toffset = 1.06
     traj_main_plt.set_title("Autonomous vehicle trajectory (Z, X)", y=toffset)
     traj_main_plt.set_title("Trajectory (Z, X)", y=1)
-    traj_main_plt.plot(locZ, locX, ".-", label="Trajectory", zorder=1, linewidth=1, markersize=4)
+    traj_main_plt.plot(
+        locZ, locX, ".-", label="Trajectory", zorder=1, linewidth=1, markersize=4
+    )
     traj_main_plt.set_xlabel("Z")
     # traj_main_plt.axes.yaxis.set_ticklabels([])
     # Plot reference lines
-    traj_main_plt.plot([locZ[0], locZ[-1]], [locX[0], locX[-1]], "--", label="Auxiliary line", zorder=0, linewidth=1)
+    traj_main_plt.plot(
+        [locZ[0], locZ[-1]],
+        [locX[0], locX[-1]],
+        "--",
+        label="Auxiliary line",
+        zorder=0,
+        linewidth=1,
+    )
     # Plot camera initial location
     traj_main_plt.scatter([0], [0], s=8, c="red", label="Start location", zorder=2)
     traj_main_plt.set_xlim([min, max])
     traj_main_plt.set_ylim([min, max])
-    traj_main_plt.legend(loc=1, title="Legend", borderaxespad=0., fontsize="medium", frameon=True)
+    traj_main_plt.legend(
+        loc=1, title="Legend", borderaxespad=0.0, fontsize="medium", frameon=True
+    )
 
     # Plot ZY
     # ZY_plt.set_title("Z Y", y=toffset)
     ZY_plt.set_ylabel("Y", labelpad=-4)
     ZY_plt.axes.xaxis.set_ticklabels([])
     ZY_plt.plot(locZ, locY, ".-", linewidth=1, markersize=4, zorder=0)
-    ZY_plt.plot([locZ[0], locZ[-1]], [(locY[0] + locY[-1]) / 2, (locY[0] + locY[-1]) / 2], "--", linewidth=1, zorder=1)
+    ZY_plt.plot(
+        [locZ[0], locZ[-1]],
+        [(locY[0] + locY[-1]) / 2, (locY[0] + locY[-1]) / 2],
+        "--",
+        linewidth=1,
+        zorder=1,
+    )
     ZY_plt.scatter([0], [0], s=8, c="red", label="Start location", zorder=2)
     ZY_plt.set_xlim([min, max])
     ZY_plt.set_ylim([minY, maxY])
@@ -154,7 +182,13 @@ def visualize_trajectory(trajectory):
     YX_plt.set_ylabel("X")
     YX_plt.set_xlabel("Y")
     YX_plt.plot(locY, locX, ".-", linewidth=1, markersize=4, zorder=0)
-    YX_plt.plot([(locY[0] + locY[-1]) / 2, (locY[0] + locY[-1]) / 2], [locX[0], locX[-1]], "--", linewidth=1, zorder=1)
+    YX_plt.plot(
+        [(locY[0] + locY[-1]) / 2, (locY[0] + locY[-1]) / 2],
+        [locX[0], locX[-1]],
+        "--",
+        linewidth=1,
+        zorder=1,
+    )
     YX_plt.scatter([0], [0], s=8, c="red", label="Start location", zorder=2)
     YX_plt.set_xlim([minY, maxY])
     YX_plt.set_ylim([min, max])
@@ -166,11 +200,11 @@ def visualize_trajectory(trajectory):
     D3_plt.set_xlim3d(min, max)
     D3_plt.set_ylim3d(min, max)
     D3_plt.set_zlim3d(min, max)
-    D3_plt.tick_params(direction='out', pad=-2)
+    D3_plt.tick_params(direction="out", pad=-2)
     D3_plt.set_xlabel("X", labelpad=0)
     D3_plt.set_ylabel("Z", labelpad=0)
     D3_plt.set_zlabel("Y", labelpad=-2)
-    
+
     # plt.axis('equal')
     D3_plt.view_init(45, azim=30)
     plt.tight_layout()
