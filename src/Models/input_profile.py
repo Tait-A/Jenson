@@ -45,49 +45,71 @@ class Profiler:
             steering_angle,
         )
         steering_profile = Spline(steering_angle, t=ti)
-        radius_profile = Spline(radius, t=ti)
+
+        radius = np.array(radius)
         gravity = 9.81
 
-        steering_profile.plot()
-        radius_profile.plot()
+        # print(radius)
+        # steering_profile.plot()
+        # radius_profile.plot()
 
         max_cornering_velocity = np.sqrt(
             robot.friction * radius * gravity
         )  # set frictional force equal to centripetal force to get max velocity
 
+        avg_radius = radius.mean()
+        print("Avg radius: ", avg_radius)
+
+        avg_velocity = max_cornering_velocity.mean()
+        print("Avg velocity: ", avg_velocity)
+
         velocity = np.minimum(max_speed, max_cornering_velocity)
+
+        self.max_velocity = velocity.copy()
+
+        max_velocity_spline = Spline(self.max_velocity, t=ti)
+        # max_velocity_spline.plot()
 
         first_lap_velocity = velocity.copy()
 
         first_lap_velocity[0] = 0
 
+        param = [0] * 200
+
         for i in range(1, len(first_lap_velocity)):
             dist = self.path.lin_dist(ti[i - 1], ti[i])  # linear distance to the next
+            param[i] = param[i - 1] + dist
 
             # time taken to travel the distance (assuming constant acceleration)
-            t = 2 * dist / (first_lap_velocity[i - 1] + first_lap_velocity[i])
+            u = first_lap_velocity[i - 1]
+            a = max_acc
+            t = (-u + np.sqrt(u**2 + 2 * a * dist)) / a
 
             if first_lap_velocity[i] - first_lap_velocity[i - 1] > max_acc * t:
                 first_lap_velocity[i] = first_lap_velocity[i - 1] + max_acc * t
-            if first_lap_velocity[i] > max_cornering_velocity[i]:
-                first_lap_velocity[i] = max_cornering_velocity[i]
 
-        velocity[0] = first_lap_velocity[-1]
+        param = np.array(param) / param[-1]
+        velocity[0] = 2  # first_lap_velocity[-1]
 
         for i in range(1, len(velocity)):
             dist = self.path.lin_dist(ti[i - 1], ti[i])
-            t = 2 * dist / (velocity[i - 1] + velocity[i])
+
+            u = velocity[i - 1]
+            a = max_acc
+            t = (-u + np.sqrt(u**2 + 2 * a * dist)) / a
             if velocity[i] - velocity[i - 1] > max_acc * t:
                 velocity[i] = velocity[i - 1] + max_acc * t
-            if velocity[i] > max_cornering_velocity[i]:
-                velocity[i] = max_cornering_velocity[i]
 
         # Backwards pass to ensure that the updates don't push the velocity beyond it's limits with braking
         velocity[-1] = velocity[0]
 
         for i in range(len(velocity) - 1, 0, -1):
             dist = self.path.lin_dist(ti[i - 1], ti[i])
-            t = 2 * dist / (velocity[i - 1] + velocity[i])
+
+            u = velocity[i]
+            a = max_decel
+            t = (-u + np.sqrt(u**2 + 2 * a * dist)) / a
+
             if velocity[i - 1] - velocity[i] > max_decel * t:
                 velocity[i - 1] = velocity[i] + max_decel * t
 
@@ -95,22 +117,32 @@ class Profiler:
 
         for i in range(len(first_lap_velocity) - 1, 0, -1):
             dist = self.path.lin_dist(ti[i - 1], ti[i])
-            t = 2 * dist / (first_lap_velocity[i - 1] + first_lap_velocity[i])
+
+            u = first_lap_velocity[i]
+            a = max_decel
+            t = (-u + np.sqrt(u**2 + 2 * a * dist)) / a
+
             decel = first_lap_velocity[i - 1] - first_lap_velocity[i]
             if decel > max_decel * t:
                 first_lap_velocity[i - 1] = first_lap_velocity[i] + max_decel * t
 
+        self.first_lap_velocity = first_lap_velocity
+        self.velocity = velocity
+
+        avg_velocity = velocity.mean()
+        print("Avg velocity: ", avg_velocity)
+
         first_lap_velocity_spline = Spline(
             first_lap_velocity,
-            t=np.linspace(0, 1, self.intervals),
+            t=param,
         )
         velocity_spline = Spline(
             velocity,
-            t=np.linspace(0, 1, self.intervals),
+            t=param,
         )
 
-        first_lap_velocity_spline.plot()
-        velocity_spline.plot()
+        # first_lap_velocity_spline.plot()
+        # velocity_spline.plot()
 
         # Print the path length
         print(f"Path length: {path.length}")
@@ -119,10 +151,10 @@ class Profiler:
         states = [[] for _ in range(self.laps)]
         x, y = path.spline(0)
         prev_state = State(0, y, 0, 0, 0)
-        print(x, y)
+        # print(x, y)
         actions = [[] for _ in range(self.laps)]
         d = max_acc * STATE_TIMESTEP**2 / 2 / path.length
-        print(d)
+        # print(d)
         while d < self.laps:
             lap = int(d // 1.0)
             dist = d - lap
