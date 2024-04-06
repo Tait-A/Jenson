@@ -191,5 +191,5 @@ class Track:
 
 if __name__ == "__main__":
     car = Robot()
-    path = os.path.join(config.SRC_PATH, "JSON/track.json")
+    path = os.path.join(config.SRC_PATH, "Models/track.json")
     track = Track.from_json(path, car)

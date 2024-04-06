@@ -26,7 +26,7 @@ class DatasetHandler:
         current_dir = current_path.split("/")[0:-1]
 
         absolute_path = config.SRC_PATH
-        self.image_dir = os.path.join(absolute_path, "Output/linear")
+        self.image_dir = os.path.join(absolute_path, "Output")
 
         # Set up data holders
         self.images = []
