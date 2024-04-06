@@ -18,9 +18,10 @@ THRESHOLD = 0.0001
 
 
 class QuickElasticSmoothing:
-    def __init__(self, path, width, cones, intervals=200):
+    def __init__(self, path, width, cones, normalisation: bool = True, intervals=200):
         self.intervals = intervals
         self.cones = cones
+        self.normalisation = normalisation
         ti = np.linspace(0, 1, intervals)
         self.centres = path.spline(ti)
         self.widths = self.generate_bubbles(self.centres, width, cones)
@@ -91,8 +92,9 @@ class QuickElasticSmoothing:
             projected_force = np.dot(total_force, norms[i])
             forces[i] = projected_force
 
-        avg_force = np.average(forces)
-        forces = forces - avg_force
+        if self.normalisation:
+            avg_force = np.average(forces)
+            forces = forces - avg_force
         return forces
 
     def find_width(self, centre, bound, cones):
